@@ -1,10 +1,10 @@
 const products = [
-  { id: 1, name: "Product 1", price: 10 },
-  { id: 2, name: "Product 2", price: 20 },
-  { id: 3, name: "Product 3", price: 30 },
+  { id: 1, name: "Product 1", price: 10, quantity: 3},
+  { id: 2, name: "Product 2", price: 20, quantity: 5},
+  { id: 3, name: "Product 3", price: 30, quantity: 0},
 ];
 
-const cart = [];
+let cart = [];
 
 function renderProducts() {
   const productList = document.getElementById("product-list");
@@ -17,7 +17,9 @@ function renderProducts() {
                       <h5 class="card-title">${product.name}</h5>
                       <p class="card-text">$${product.price}</p>
                       <button class="btn btn-primary add-to-cart" data-id="${product.id}">Add to Cart</button>
-                      <button class="btn btn-danger btn-primary remove-from-cart" data-id="remove.btn">Remove</button>
+                      <button type="button" class="btn btn-primary">
+  In Stock <span class="badge badge-light">${product.quantity}</span>
+</button>
                   </div>
               </div>
           </div>
@@ -43,7 +45,7 @@ function renderProducts() {
       });
     });
 }
-
+ 
 function renderCart() {
   // cart-list fiind un element in index.html
   const cartList = document.getElementById("cart-list");
@@ -69,14 +71,9 @@ function renderCart() {
   document.querySelectorAll(".remove-from-cart").forEach((button) => {
     //  TODO: implementeaza ce sa faca remove from cart ✔
 
-      // fiecarui button ii spun ce sa faca la "click"
-      button.removeEventListener("click", (event) => {
-        // ma uit in attribute - acolo am pus id-ul produsului ca informatie
-        // si preiau cu getAttribute acea valoare
+      button.addEventListener("click", (event) => {
         const productId = parseInt(event.target.getAttribute("data-id"));
-  
-        // o pasez functiei addToCart ca parametru
-        removefromCart(productId);
+        removeFromCart(productId);
       });
     });
 }
@@ -86,58 +83,111 @@ function addToCart(productId) {
 
   // TODO: "impinge" produsul in lista de cart ✔
   // asta trebuie sa faci tu :)
-  product.push(productId);
-  // ca sa afisez actualizat - practic fac override la ce am deja in innerHTML
+  if (product && product.quantity > 0) {
+    // Decrease stock quantity
+    product.quantity -= 1;
+
+    // Pushing the product into the cart
+    cart.push({ ...product });
+
+    // Updating the display
+    renderCart();
+  } else {
+    alert("Product is out of stock");
+  }
+
+  renderProducts();
   renderCart();
+  // ca sa afisez actualizat - practic fac override la ce am deja in innerHTML
+
 }
 
 function removeFromCart(productId) {
   // filtreaza-mi tot ce e diferit ce input "productId"
   // obtin un array fara ce am pasat in input
-  const cart = cart.filter((item) => item.id !== productId); //***adaugat const; nu putea a faca override peste cealalta declaratie
-  
-  // update la datele afisate
-  renderCart();
+  const index = cart.findIndex(item => item.id === productId);
+
+  if (index !== -1) {
+    const removedProduct = cart.splice(index, 1)[0];
+
+    // Find the corresponding product in products array
+    const originalProduct = products.find((p) => p.id === removedProduct.id);
+    if (originalProduct) {
+      originalProduct.quantity += 1; // Increment quantity back
+    }
+
+    renderProducts();
+    renderCart();
+}
 }
 
-function checkout() {
-  // TODO: conditioneaza un alert message daca nu ai continut ✔
-  // HINT:
-  // if (
-  //   // cartul nu are continut
-  // ) {
-  //   alert("Your cart is empty!");
-  //   return;
-  // }
+// Function to calculate the total price of the cart
+function getTotal() {
+  const initialTotalValue = 0; // initially, the total is 0 RON
 
-  if( "cartList"[0]) {
+  const calculationLogic = (total, product) => {
+    const calculatedTotal = Math.round(total + product.price);
+    return calculatedTotal;
+  };
+
+  return cart.reduce(calculationLogic, initialTotalValue);
+}
+
+// Function to count the number of products in the cart
+function countProducts() {
+  return cart.length;
+}
+
+// Function to get the list of product names from the cart
+function getProductsFromCart() {
+  return cart.map(product => product.name).join(', ');
+}
+
+// Function to provide checkout information
+function getCheckoutInfo() {
+  const total = getTotal();
+  const numberOfProducts = countProducts();
+  const productsList = getProductsFromCart();
+  const description = "Your cart contains: " + productsList;
+
+  return {
+    total,
+    numberOfProducts,
+    productsList,
+    descriptionMessage: description,
+  };
+}
+
+// Function to handle the checkout process
+function checkout() {
+  // Check if the cart is empty
+  if (cart.length === 0) {
     alert("Your cart is empty.");
     return "Your cart is empty.";
-
   }
 
-  // TODO: calculeaza totalul cartului ✔
-function cart() {
-  const item = [Number(document.getElementById((item) => item.id === "productId"))]
-  let cartTotal = 0;
-  for (let i = 0; i < cart.length; i++){
-    cartTotal += cart[i];
-  }
+  // Get checkout information
+  const checkoutInfo = getCheckoutInfo();
 
-  console.log(cartTotal);
-}
-  // afiseaza mesajul
-  alert(`Your total is $${total}. Thank you for your purchase!`);
-  
-  // acum ca a dat checkout si "a cumparat"
-  // golim cartul pentru alte cumparaturi :)
-  cart.length = 0; // Clear the cart
+  // Construct the alert message
+  const alertMessage = `
+    Total Price: $${checkoutInfo.total}
+    Number of Products: ${checkoutInfo.numberOfProducts}
+    Products: ${checkoutInfo.productsList}
+  `;
 
-  // si facem iar update
-  renderCart();
+  // Display the alert message
+  alert(alertMessage);
+
+  // Return the checkout information for further use if needed
+  return checkoutInfo;
 }
 
 
 document.getElementById("checkout-btn").addEventListener("click", checkout);
 
 renderProducts();
+
+document.getElementById("checkout-btn").addEventListener("click", 'show');
+
+
